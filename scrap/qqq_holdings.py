@@ -18,7 +18,7 @@ class QQQHoldingsScraper:
     def __init__(self, notifier: Notifier):
         self.notifier = notifier
 
-    def scrape(self):
+    def scrap(self):
         response = requests.get(
             "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/QQQ/holdings/fund?idType=ticker&interval=monthly&productType=ETF",
         )

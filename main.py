@@ -1,11 +1,12 @@
-from typing import Dict
 from time import sleep
+from typing import Dict, Any
 import os
+from dataclasses import dataclass, fields, MISSING
 
 from scrap import (
     ib_margin_rate,
     ib_ref_bm_rate,
-    ib_spot_cur_comission,
+    # ib_spot_cur_comission,
     qqq_holdings,
     voo_holdings,
 )
@@ -14,44 +15,50 @@ from interfaces import Notifier, Scraper
 
 import requests
 
-botToken = os.getenv("DISCORD_BOT_TOKEN", "")
-clientId = os.getenv("DISCORD_CLIENT_ID", "")
-clientSecret = os.getenv("DISCORD_CLIENT_SECRET", "")
-guildId = os.getenv("DISCORD_GUILD_ID", "")
-notificationChannelId = os.getenv("DISCORD_IB_NOTIFY_CHANNEL_ID", "")
+
+@dataclass
+class Config:
+    """用來存放從環境變數讀取的設定"""
+
+    discord_bot_token: str
+    discord_ib_notify_channel_id: str
+    discord_client_id: str
+    discord_client_secret: str
+    discord_guild_id: str
+    # optional_field: Optional[str] = None
+
+    @classmethod
+    def from_env(cls) -> "Config":
+        """從環境變數讀取設定，並動態建立 Config 實例"""
+        missing_vars: list[str] = []
+        config_values: dict[str, Any] = {}
+        for field in fields(cls):
+            env_var = field.name.upper()
+            value = os.getenv(env_var)
+
+            # 如果環境變數不存在
+            if value is None:
+                # 檢查此欄位是否有預設值 (也就是選填)
+                if field.default is MISSING:
+                    missing_vars.append(env_var)
+            config_values[field.name] = value or field.default
+        if missing_vars:
+            raise ValueError(f"缺少必要的環境變數，請設定: {', '.join(missing_vars)}")
+        return cls(**config_values)
 
 
 def main():
-    headers: Dict[str, str] = {"Authorization": "Bot " + botToken}
-
-    # print(
-    #     "https://discord.com/api/oauth2/authorize?client_id="
-    #     + clientId
-    #     + "&permissions=8&scope=bot%20applications.commands"
-    # )
-
-    # rsp = requests.get(
-    #     "https://discord.com/api/channels/1444985089191575592", headers=headers
-    # )
-    # print(rsp.text)
-
-    # headers: Dict[str, str] = {"Authorization": "Bot " + botToken}
-
-    # rsp = requests.get(
-    #     "https://discord.com/api/channels/1445226039201497219", headers=headers
-    # )
-    # print(rsp.text)
+    config = Config.from_env()
+    headers: Dict[str, str] = {"Authorization": "Bot " + config.discord_bot_token}
 
     rsp = requests.get(
-        f"https://discord.com/api/channels/{notificationChannelId}/webhooks",
+        f"https://discord.com/api/channels/{config.discord_ib_notify_channel_id}/webhooks",
         headers=headers,
     )
 
     notiWebhookUrl = rsp.json()[0]["url"]
 
     notifier: Notifier = DiscordNotifier(webhook_url=notiWebhookUrl + "?wait=true")
-
-    # notifier.notify("hello")
 
     scripts: list[Scraper] = [
         #        ib_spot_cur_comission.IBSpotCurrencyCommissionScraper(notifier=notifier),
@@ -62,9 +69,9 @@ def main():
     ]
 
     for script in scripts:
-        # slow down to avoid triggering rate limit ban
+        # 減慢請求速度以避免觸發速率限制
         sleep(3)
-        script.scrape()
+        script.scrap()
 
 
 if __name__ == "__main__":

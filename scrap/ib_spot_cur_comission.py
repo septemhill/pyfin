@@ -19,7 +19,7 @@ class IBSpotCurrencyCommissionScraper:
     def __init__(self, notifier: Notifier):
         self.notifier = notifier
 
-    def scrape(self):
+    def scrap(self):
         response = requests.get(
             "https://www.interactivebrokers.com/en/pricing/commissions-spot-currencies.php"
         )

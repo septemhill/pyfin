@@ -3,6 +3,7 @@ import requests
 import time
 import json
 from dataclasses import dataclass
+from quickchart import QuickChart
 
 
 @dataclass
@@ -21,13 +22,10 @@ class IBReferenceBenchmarkRateScraper:
     def __init__(self, notifier: Notifier):
         self.notifier = notifier
 
-    def scrape(self):
+    def scrap(self):
         response = requests.get(
             "https://www.interactivebrokers.com/webrest/interests/benchmarks/llc",
         )
-
-        # print(response.text)
-        # message = f"--- IB Margin Rates ---\n{margin_table.to_string()}"
 
         title: str = f"{time.strftime('%Y-%m-%d')} [IB] Reference Benchmark Rates"
         content: str = time.strftime("%Y-%m-%d")
@@ -37,4 +35,36 @@ class IBReferenceBenchmarkRateScraper:
             ReferenceBenchmarkRate(**rate) for rate in data
         ]
 
-        self.notifier.thread_notify(title, content, rates)
+        currencies = [r.id for r in rates]
+        bm_rates = [r.value for r in rates]
+        print(bm_rates)
+
+        qc = QuickChart()
+        qc.width = 1600
+        qc.height = 800
+
+        qc.config = f"""{{
+          type: 'bar',
+          data: {{
+            labels: {currencies},
+            datasets: [
+              {{
+                label: 'Benchmark Rates',
+                data: {bm_rates},
+              }}
+            ],
+          }},
+          options: {{
+            scales: {{
+              yAxes: [{{
+                ticks: {{
+                  callback: (val) => {{
+                    return val.toLocaleString() + '%';
+                  }},
+                }}
+              }}]
+            }}
+          }},
+        }}"""
+
+        self.notifier.notify(title, content, qc.get_url())

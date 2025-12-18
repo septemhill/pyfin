@@ -3,7 +3,7 @@ from typing import Any
 
 
 class Scraper(Protocol):
-    def scrape(self): ...
+    def scrap(self): ...
 
 
 class Notifier(Protocol):

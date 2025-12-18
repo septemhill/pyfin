@@ -11,6 +11,8 @@ on:
 jobs:
   run_scraper:
     runs-on: ubuntu-latest
+    
+    environment: prod
 
     steps:
     - name: Checkout repository
