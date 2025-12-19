@@ -63,7 +63,17 @@ class IBReferenceBenchmarkRateScraper:
                   }},
                 }}
               }}]
-            }}
+            }},
+            plugins: {{
+              datalabels: {{
+                anchor: 'center',
+                align: 'center',
+                color: '#666',
+                font: {{
+                    weight: 'normal',
+                }},
+              }},
+            }},
           }},
         }}"""
 
